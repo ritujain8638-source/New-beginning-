@@ -280,7 +280,7 @@
           <input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required>
         </label>
         <label for="password">Password
-          <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required>
+          <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Optional for demo login">
         </label>
         <p class="login-status" role="status" aria-live="polite"></p>
         <button class="primary-button" type="submit">Log in</button>
@@ -390,33 +390,59 @@
       loginButton.focus();
     }
 
+    async function readApiResponse(response, fallbackMessage) {
+      const text = await response.text();
+      let result;
+      try {
+        result = text ? JSON.parse(text) : {};
+      } catch {
+        result = { error: text || fallbackMessage };
+      }
+      if (!response.ok) throw new Error(result.error || fallbackMessage);
+      return result;
+    }
+
     loginButton.addEventListener("click", async () => {
       if (userDataStore.getUser()) {
-        await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
-        userDataStore.clearUser();
-        loginStatus.textContent = "You have been logged out.";
-        updateLoginButton();
+        try {
+          const response = await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
+          await readApiResponse(response, "Unable to log out.");
+          userDataStore.clearUser();
+          loginStatus.textContent = "You have been logged out.";
+          updateLoginButton();
+        } catch (error) {
+          loginStatus.textContent = error.message;
+        }
         return;
       }
       loginDialog.classList.add("is-open");
+      const savedUser = userDataStore.getUser();
+      if (savedUser) {
+        loginForm.elements.username.value = savedUser.username;
+        loginForm.elements.email.value = savedUser.email;
+      }
       loginDialog.querySelector("input").focus();
     });
     document.querySelector(".create-account").addEventListener("click", async () => {
       const formData = new FormData(loginForm);
+      const username = String(formData.get("username") || "").trim();
+      const email = String(formData.get("email") || "").trim();
+      const password = String(formData.get("password") || "");
+      if (!username || !email || password.length < 8) {
+        loginStatus.textContent = "Enter a username, valid email, and password of at least 8 characters.";
+        return;
+      }
       try {
         const response = await fetch("/api/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "same-origin",
-          body: JSON.stringify({
-            username: formData.get("username"),
-            email: formData.get("email"),
-            password: formData.get("password")
-          })
+          body: JSON.stringify({ username, email, password })
         });
-        if (!response.ok) throw new Error((await response.json()).error || "Unable to create account.");
-        userDataStore.setUser(await response.json());
-        loginStatus.textContent = "Your account has been created.";
+        const user = await readApiResponse(response, "Unable to create account.");
+        userDataStore.setUser(user);
+        loginStatus.textContent = "Account created. You are logged in.";
+        loginForm.reset();
         updateLoginButton();
         closeLoginDialog();
       } catch (error) {
@@ -431,12 +457,19 @@
       event.preventDefault();
       const formData = new FormData(loginForm);
       try {
-        await userDataStore.saveUser({
+        const user = {
           username: formData.get("username"),
           email: formData.get("email"),
           password: formData.get("password")
-        });
-        loginStatus.textContent = "You are logged in.";
+        };
+        if (user.password) {
+          await userDataStore.saveUser(user);
+          loginStatus.textContent = "You are securely logged in.";
+        } else {
+          await userDataStore.saveDemoUser(user);
+          loginStatus.textContent = "You are logged in (demo mode).";
+        }
+        loginForm.reset();
         updateLoginButton();
         closeLoginDialog();
       } catch (error) {
@@ -472,6 +505,10 @@
 
     updateCart();
     updateLoginButton();
+    userDataStore.restoreSession().then(updateLoginButton).catch(() => {
+      userDataStore.clearUser();
+      updateLoginButton();
+    });
   </script>
 </body>
 </html>
