@@ -284,6 +284,7 @@
         </label>
         <p class="login-status" role="status" aria-live="polite"></p>
         <button class="primary-button" type="submit">Log in</button>
+        <button class="create-account" type="button">Create account</button>
       </form>
     </div>
 
@@ -389,8 +390,9 @@
       loginButton.focus();
     }
 
-    loginButton.addEventListener("click", () => {
+    loginButton.addEventListener("click", async () => {
       if (userDataStore.getUser()) {
+        await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
         userDataStore.clearUser();
         loginStatus.textContent = "You have been logged out.";
         updateLoginButton();
@@ -399,20 +401,47 @@
       loginDialog.classList.add("is-open");
       loginDialog.querySelector("input").focus();
     });
+    document.querySelector(".create-account").addEventListener("click", async () => {
+      const formData = new FormData(loginForm);
+      try {
+        const response = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({
+            username: formData.get("username"),
+            email: formData.get("email"),
+            password: formData.get("password")
+          })
+        });
+        if (!response.ok) throw new Error((await response.json()).error || "Unable to create account.");
+        userDataStore.setUser(await response.json());
+        loginStatus.textContent = "Your account has been created.";
+        updateLoginButton();
+        closeLoginDialog();
+      } catch (error) {
+        loginStatus.textContent = error.message;
+      }
+    });
     closeLoginButton.addEventListener("click", closeLoginDialog);
     loginDialog.addEventListener("click", (event) => {
       if (event.target === loginDialog) closeLoginDialog();
     });
-    loginForm.addEventListener("submit", (event) => {
+    loginForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       const formData = new FormData(loginForm);
-      userDataStore.saveUser({
-        username: formData.get("username"),
-        email: formData.get("email")
-      });
-      loginStatus.textContent = "Your profile has been saved on this device.";
-      updateLoginButton();
-      closeLoginDialog();
+      try {
+        await userDataStore.saveUser({
+          username: formData.get("username"),
+          email: formData.get("email"),
+          password: formData.get("password")
+        });
+        loginStatus.textContent = "You are logged in.";
+        updateLoginButton();
+        closeLoginDialog();
+      } catch (error) {
+        loginStatus.textContent = error.message;
+      }
     });
 
     cartButton.addEventListener("click", () => {
