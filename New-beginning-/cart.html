@@ -27,6 +27,9 @@
     .quantity-controls button { width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 9px; color: var(--ink); background: var(--cream); font-size: 1.1rem; cursor: pointer; }
     .quantity-controls button:hover { border-color: var(--orange); }
     .summary { display: flex; justify-content: space-between; margin-top: 30px; padding-top: 22px; border-top: 1px solid var(--line); font-size: 1.3rem; font-weight: 900; }
+    .buy-button { margin-top: 22px; border: 0; border-radius: 12px; padding: 15px 24px; color: white; background: var(--orange); font: inherit; font-weight: 800; cursor: pointer; }
+    .buy-button:hover { background: #d85e36; }
+    .order-message { color: var(--orange); font-weight: 800; line-height: 1.6; }
     .empty { padding: 35px; border-radius: 18px; background: var(--paper); color: var(--muted); }
     @media (max-width: 650px) { .cart-item { grid-template-columns: 1fr; } .cart-item-image { min-height: 220px; } }
   </style>
@@ -38,6 +41,8 @@
     <h1>Items in your cart</h1>
     <div class="cart-list"></div>
     <div class="summary"><span>Total</span><span class="total">₹0</span></div>
+    <button class="buy-button" type="button">Buy now</button>
+    <p class="order-message" role="status" aria-live="polite"></p>
   </main>
   <script>
     const images = {
@@ -50,6 +55,8 @@
     };
     const list = document.querySelector(".cart-list");
     const totalElement = document.querySelector(".total");
+    const buyButton = document.querySelector(".buy-button");
+    const orderMessage = document.querySelector(".order-message");
     let cart = JSON.parse(localStorage.getItem("foodWithHeathCart") || "[]");
 
     function renderCart() {
@@ -81,8 +88,15 @@
         list.append(empty);
       }
       totalElement.textContent = `₹${total}`;
+      buyButton.disabled = !cart.length;
+      buyButton.style.opacity = cart.length ? "1" : ".5";
       localStorage.setItem("foodWithHeathCart", JSON.stringify(cart));
     }
+
+    buyButton.addEventListener("click", () => {
+      if (!cart.length) return;
+      window.location.href = "payment.html";
+    });
 
     list.addEventListener("click", (event) => {
       const button = event.target.closest("[data-action]");

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment | Food with Heath</title>
+  <style>
+    :root { --ink: #21312b; --muted: #6e7c74; --cream: #fffaf2; --paper: #fff; --orange: #ee7548; --line: #e9e8e2; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--ink); background: var(--cream); font-family: "Trebuchet MS", "Segoe UI", sans-serif; }
+    a { color: inherit; text-decoration: none; }
+    .container { width: min(1080px, calc(100% - 40px)); margin: 0 auto; }
+    header { padding: 24px 0; border-bottom: 1px solid var(--line); }
+    nav { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .brand { font-size: 1.4rem; font-weight: 800; letter-spacing: -.04em; }
+    .back-link { color: var(--orange); font-weight: 800; }
+    main { padding: 50px 0 80px; }
+    .eyebrow { color: var(--orange); font-size: .78rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+    h1 { margin: 10px 0 30px; font-size: clamp(2.5rem, 6vw, 4.5rem); letter-spacing: -.07em; }
+    .checkout-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 28px; align-items: start; }
+    .panel { padding: 26px; border-radius: 20px; background: var(--paper); box-shadow: 0 12px 30px rgba(53, 62, 47, .08); }
+    .panel h2 { margin: 0 0 22px; font-size: 1.5rem; }
+    .order-items { display: grid; gap: 18px; }
+    .order-item { display: grid; grid-template-columns: 92px 1fr auto; gap: 14px; align-items: center; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+    .order-item-image { width: 92px; height: 92px; border-radius: 12px; background-position: center; background-size: cover; }
+    .order-item h3 { margin: 0 0 6px; font-size: 1rem; }
+    .order-item p { margin: 0; color: var(--muted); font-size: .88rem; }
+    .item-price, .total { font-weight: 900; }
+    .total-row { display: flex; justify-content: space-between; margin-top: 22px; font-size: 1.25rem; }
+    .payment-form { display: grid; gap: 15px; }
+    label { display: grid; gap: 7px; font-size: .82rem; font-weight: 800; }
+    input { width: 100%; border: 1px solid var(--line); border-radius: 9px; padding: 12px; color: var(--ink); background: #fffdf9; font: inherit; }
+    input:focus { outline: 2px solid rgba(238, 117, 72, .3); border-color: var(--orange); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .pay-button { border: 0; border-radius: 11px; padding: 14px; color: white; background: var(--orange); font: inherit; font-weight: 800; cursor: pointer; }
+    .pay-button:hover { background: #d85e36; }
+    .payment-note, .payment-status { color: var(--muted); font-size: .8rem; line-height: 1.5; }
+    .payment-status { color: var(--orange); font-weight: 800; }
+    @media (max-width: 760px) { .checkout-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header><nav class="container"><a class="brand" href="first.html">✦ food with heath</a><a class="back-link" href="cart.html">← Back to cart</a></nav></header>
+  <main class="container">
+    <div class="eyebrow">Secure checkout demo</div>
+    <h1>Complete your order</h1>
+    <div class="checkout-grid">
+      <section class="panel">
+        <h2>Your items</h2>
+        <div class="order-items"></div>
+        <div class="total-row"><span>Total</span><span class="total">₹0</span></div>
+      </section>
+      <section class="panel">
+        <h2>Payment details</h2>
+        <form class="payment-form">
+          <label>Full name<input name="name" type="text" autocomplete="name" required></label>
+          <label>Email<input name="email" type="email" autocomplete="email" required></label>
+          <label>Card number<input name="card" inputmode="numeric" autocomplete="cc-number" placeholder="4242 4242 4242 4242" minlength="12" required></label>
+          <div class="form-row">
+            <label>Expiry date<input name="expiry" type="text" autocomplete="cc-exp" placeholder="MM/YY" required></label>
+            <label>CVV<input name="cvv" type="password" inputmode="numeric" autocomplete="cc-csc" minlength="3" maxlength="4" required></label>
+          </div>
+          <p class="payment-note">Demo only: card details are not sent or stored. A real provider should tokenize payments.</p>
+          <button class="pay-button" type="submit">Pay now</button>
+          <p class="payment-status" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+    </div>
+  </main>
+  <script>
+    const items = document.querySelector(".order-items");
+    const totalElement = document.querySelector(".total");
+    const form = document.querySelector(".payment-form");
+    const status = document.querySelector(".payment-status");
+    const cart = JSON.parse(localStorage.getItem("foodWithHeathCart") || "[]");
+    let total = 0;
+
+    cart.forEach((item) => {
+      total += item.price * item.quantity;
+      const row = document.createElement("article");
+      row.className = "order-item";
+      row.innerHTML = `
+        <div class="order-item-image" role="img" aria-label="${item.name}" style="background-image: url('${item.image}')"></div>
+        <div><h3>${item.name}</h3><p>₹${item.price} × ${item.quantity}</p></div>
+        <span class="item-price">₹${item.price * item.quantity}</span>`;
+      items.append(row);
+    });
+    totalElement.textContent = `₹${total}`;
+
+    if (!cart.length) {
+      items.textContent = "Your cart is empty.";
+      form.querySelector(".pay-button").disabled = true;
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const formData = new FormData(form);
+      try {
+        const response = await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({
+            items: cart,
+            paymentToken: `demo_${crypto.randomUUID()}`
+          })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Payment failed.");
+        localStorage.removeItem("foodWithHeathCart");
+        status.textContent = `Payment successful for ${result.items.map((item) => `${item.name} × ${item.quantity}`).join(", ")}. Total: ₹${result.total}.`;
+        form.reset();
+        form.querySelector(".pay-button").disabled = true;
+      } catch (error) {
+        status.textContent = error.message;
+      }
+    });
+  </script>
+</body>
+</html>

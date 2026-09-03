@@ -4,14 +4,24 @@
   const storageKey = "foodWithHeathUser";
 
   window.userDataStore = {
-    saveUser: function (user) {
-      const safeUser = {
+    setUser: function (user) {
+      localStorage.setItem(storageKey, JSON.stringify({
         username: user.username,
         email: user.email
-      };
+      }));
+      return user;
+    },
 
-      localStorage.setItem(storageKey, JSON.stringify(safeUser));
-      return safeUser;
+    saveUser: async function (user) {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify(user)
+      });
+      if (!response.ok) throw new Error((await response.json()).error || "Unable to log in.");
+      const safeUser = await response.json();
+      return this.setUser(safeUser);
     },
 
     getUser: function () {
