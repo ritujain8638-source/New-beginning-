@@ -67,12 +67,25 @@
     .close-modal:hover { color: var(--orange-dark); }
     .login-form { display: grid; gap: 15px; }
     .login-form label { display: grid; gap: 7px; color: var(--ink); font-size: .82rem; font-weight: 800; }
+    .login-form .show-password { display: flex; align-items: center; gap: 8px; font-weight: 400; }
+    .login-form .show-password input { width: auto; }
     .login-form input {
       width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 12px 13px;
       color: var(--ink); background: #fffdf9; font: inherit; outline: 0;
     }
     .login-form input:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(238, 117, 72, .14); }
     .login-form .primary-button { margin-top: 3px; }
+    .save-password-popover {
+      display: none; position: fixed; z-index: 20; right: 20px; bottom: 20px; width: min(100% - 40px, 360px);
+      padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--paper); box-shadow: var(--shadow);
+    }
+    .save-password-popover.is-open { display: block; }
+    .save-password-popover h3 { margin: 0 0 7px; font-size: 1.05rem; }
+    .save-password-popover p { margin: 0 0 15px; color: var(--muted); font-size: .85rem; line-height: 1.45; }
+    .save-password-actions { display: flex; justify-content: flex-end; gap: 9px; }
+    .save-password-actions button { border: 0; border-radius: 99px; padding: 9px 14px; font: inherit; font-size: .8rem; font-weight: 800; cursor: pointer; }
+    .save-password-actions .save-password-confirm { color: #fff; background: var(--ink); }
+    .save-password-actions .save-password-dismiss { color: var(--ink); background: var(--cream); }
     .cart-modal {
       position: relative; width: min(100%, 500px); max-height: min(80vh, 600px); overflow: auto;
       padding: 34px; border-radius: 22px; background: var(--paper); box-shadow: var(--shadow);
@@ -282,9 +295,11 @@
         <label for="password">Password
           <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Optional for demo login">
         </label>
+        <label class="show-password"><input id="show-password" type="checkbox"> Show password</label>
         <p class="login-status" role="status" aria-live="polite"></p>
         <button class="primary-button" type="submit">Log in</button>
         <button class="create-account" type="button">Create account</button>
+        <a class="forgot-password-link" href="forgot-password.html">Forgot password?</a>
       </form>
     </div>
 
@@ -298,6 +313,14 @@
       </div>
     </div>
   </div>
+  <aside class="save-password-popover" id="save-password-popover" aria-labelledby="save-password-title" role="dialog">
+    <h3 id="save-password-title">Save your login?</h3>
+    <p>Your browser can securely remember your username and password for next time. Food with Heath will not store your password in the website.</p>
+    <div class="save-password-actions">
+      <button class="save-password-dismiss" type="button">Not now</button>
+      <button class="save-password-confirm" type="button">Save password</button>
+    </div>
+  </aside>
 
   <footer><div class="container footer-inner"><span>© 2024 Food with Heath</span><span>Made with care, served with joy.</span></div></footer>
   <script src="user-data.js"></script>
@@ -307,6 +330,11 @@
     const closeLoginButton = document.querySelector(".close-modal");
     const loginForm = document.querySelector(".login-form");
     const loginStatus = document.querySelector(".login-status");
+    const passwordInput = document.querySelector("#password");
+    const showPassword = document.querySelector("#show-password");
+    const savePasswordPopover = document.querySelector("#save-password-popover");
+    const savePasswordConfirm = document.querySelector(".save-password-confirm");
+    const savePasswordDismiss = document.querySelector(".save-password-dismiss");
     const cartButton = document.querySelector(".cart");
     const cartCount = document.querySelector("#cart-count");
     const cartDialog = document.querySelector("#cart-dialog");
@@ -390,6 +418,28 @@
       loginButton.focus();
     }
 
+    function offerSavePassword(user, password) {
+      if (!password) return;
+      savePasswordPopover.classList.add("is-open");
+      savePasswordConfirm.onclick = async () => {
+        try {
+          if (!window.PasswordCredential || !navigator.credentials?.store) {
+            throw new Error("Password manager unavailable");
+          }
+          await navigator.credentials.store(new PasswordCredential({
+            id: user.email,
+            name: user.username,
+            password
+          }));
+          savePasswordPopover.querySelector("p").textContent = "Saved securely by your browser.";
+        } catch {
+          savePasswordPopover.querySelector("p").textContent = "Your browser could not save it. Use your browser's password-save prompt instead.";
+        }
+        savePasswordConfirm.hidden = true;
+      };
+      savePasswordDismiss.onclick = () => savePasswordPopover.classList.remove("is-open");
+    }
+
     async function readApiResponse(response, fallbackMessage) {
       const text = await response.text();
       let result;
@@ -423,6 +473,13 @@
       }
       loginDialog.querySelector("input").focus();
     });
+    showPassword.addEventListener("change", () => {
+      passwordInput.type = showPassword.checked ? "text" : "password";
+    });
+    loginForm.addEventListener("reset", () => {
+      passwordInput.type = "password";
+      showPassword.checked = false;
+    });
     document.querySelector(".create-account").addEventListener("click", async () => {
       const formData = new FormData(loginForm);
       const username = String(formData.get("username") || "").trim();
@@ -441,6 +498,7 @@
         });
         const user = await readApiResponse(response, "Unable to create account.");
         userDataStore.setUser(user);
+        offerSavePassword(user, password);
         loginStatus.textContent = "Account created. You are logged in.";
         loginForm.reset();
         updateLoginButton();
@@ -464,6 +522,7 @@
         };
         if (user.password) {
           await userDataStore.saveUser(user);
+          offerSavePassword(user, user.password);
           loginStatus.textContent = "You are securely logged in.";
         } else {
           await userDataStore.saveDemoUser(user);
