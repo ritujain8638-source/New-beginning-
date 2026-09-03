@@ -13,7 +13,7 @@ Set `SESSION_SECRET` in `.env` to a random value of at least 32 characters, then
 npm start
 ```
 
-Open `http://localhost:3000/` (or `http://localhost:3000/first.html`) in your browser. Do not open the HTML files with a `file://` URL; browsers block backend requests and may show `Forbidden. File does not reside within a trusted folder`.
+Open `http://localhost:3001/` (or `http://localhost:3001/first.html`) in your browser. This Express URL serves the complete website and backend. Do not use VS Code Live Preview or open the HTML files with a `file://` URL; those modes cannot provide the authentication, sessions, password reset, or checkout APIs and may show `Forbidden. File does not reside within a trusted folder`.
 
 The server provides hashed-password accounts, HTTP-only sessions, SQLite orders, rate-limited authentication and order endpoints, and security headers.
 
