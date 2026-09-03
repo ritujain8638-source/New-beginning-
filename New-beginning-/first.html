@@ -73,6 +73,25 @@
     }
     .login-form input:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(238, 117, 72, .14); }
     .login-form .primary-button { margin-top: 3px; }
+    .cart-modal {
+      position: relative; width: min(100%, 500px); max-height: min(80vh, 600px); overflow: auto;
+      padding: 34px; border-radius: 22px; background: var(--paper); box-shadow: var(--shadow);
+    }
+    .cart-modal h2 { margin: 7px 0 22px; font-size: 2rem; }
+    .cart-items { display: grid; gap: 14px; }
+    .cart-item { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+    .cart-item-details { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .cart-item-image { width: 58px; height: 58px; flex: 0 0 58px; border-radius: 10px; background-position: center; background-size: cover; }
+    .cart-item h3 { margin: 0 0 4px; font-size: .98rem; }
+    .cart-item p { margin: 0; color: var(--muted); font-size: .85rem; }
+    .quantity-controls { display: flex; align-items: center; gap: 9px; }
+    .quantity-controls button {
+      display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid var(--line);
+      border-radius: 8px; color: var(--ink); background: var(--cream); font-weight: 800;
+    }
+    .quantity-controls button:hover { border-color: var(--orange); color: var(--orange-dark); }
+    .cart-total { display: flex; justify-content: space-between; margin-top: 22px; font-weight: 900; }
+    .empty-cart { margin: 0; color: var(--muted); }
 
     .hero { padding: 54px 0 75px; overflow: hidden; }
     .hero-grid { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 52px; }
@@ -176,7 +195,7 @@
       </div>
       <div class="nav-actions">
         <button class="login-button" type="button" aria-haspopup="dialog" aria-controls="login-dialog">Login</button>
-        <button class="cart" type="button" aria-label="View your cart">Cart <span>2</span></button>
+        <button class="cart" type="button" aria-label="View your cart">Cart <span id="cart-count">0</span></button>
       </div>
     </nav>
   </header>
@@ -263,17 +282,107 @@
         <label for="password">Password
           <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required>
         </label>
+        <p class="login-status" role="status" aria-live="polite"></p>
         <button class="primary-button" type="submit">Log in</button>
       </form>
+    </div>
+
+    <div class="modal-backdrop" id="cart-dialog" role="dialog" aria-modal="true" aria-labelledby="cart-title">
+      <div class="cart-modal">
+        <button class="close-modal" id="close-cart" type="button" aria-label="Close cart">×</button>
+        <div class="eyebrow">Your order</div>
+        <h2 id="cart-title">Your cart</h2>
+        <div class="cart-items"></div>
+        <div class="cart-total"><span>Total</span><span class="cart-total-value">₹0</span></div>
+      </div>
     </div>
   </div>
 
   <footer><div class="container footer-inner"><span>© 2024 Food with Heath</span><span>Made with care, served with joy.</span></div></footer>
+  <script src="user-data.js"></script>
   <script>
     const loginDialog = document.querySelector("#login-dialog");
     const loginButton = document.querySelector(".login-button");
     const closeLoginButton = document.querySelector(".close-modal");
     const loginForm = document.querySelector(".login-form");
+    const loginStatus = document.querySelector(".login-status");
+    const cartButton = document.querySelector(".cart");
+    const cartCount = document.querySelector("#cart-count");
+    const cartDialog = document.querySelector("#cart-dialog");
+    const closeCartButton = document.querySelector("#close-cart");
+    const cartItems = document.querySelector(".cart-items");
+    const cartTotal = document.querySelector(".cart-total-value");
+    let cart = JSON.parse(localStorage.getItem("foodWithHeathCart") || "[]");
+    const dishImages = {
+      "photo-one": "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=600&q=80",
+      "photo-two": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600&q=80",
+      "photo-three": "https://images.unsplash.com/photo-1563379926898-05f4575a45d8?auto=format&fit=crop&w=600&q=80",
+      "photo-four": "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80",
+      "photo-five": "https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=600&q=80",
+      "photo-six": "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=600&q=80"
+    };
+
+    function saveCart() {
+      localStorage.setItem("foodWithHeathCart", JSON.stringify(cart));
+    }
+
+    function updateCart() {
+      cart.forEach((item) => {
+        if (!item.image || item.image === 'url("")') {
+          const dishCard = [...document.querySelectorAll(".dish-card")].find(
+            (card) => card.querySelector("h3").textContent === item.name
+          );
+          if (dishCard) item.image = dishImages[[...dishCard.querySelector(".dish-photo").classList].find((className) => dishImages[className])];
+        }
+      });
+      const itemCount = cart.reduce((total, item) => total + item.quantity, 0);
+      const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      cartCount.textContent = itemCount;
+      cartTotal.textContent = `₹${total}`;
+      cartItems.replaceChildren();
+
+      if (!cart.length) {
+        const emptyMessage = document.createElement("p");
+        emptyMessage.className = "empty-cart";
+        emptyMessage.textContent = "Your cart is empty.";
+        cartItems.append(emptyMessage);
+        return;
+      }
+
+      cart.forEach((item) => {
+        const row = document.createElement("div");
+        row.className = "cart-item";
+        row.innerHTML = `
+          <div class="cart-item-details">
+            <div class="cart-item-image" role="img" aria-label="${item.name}" style="background-image: url('${item.image}')"></div>
+            <div><h3>${item.name}</h3><p>₹${item.price} each</p></div>
+          </div>
+          <div class="quantity-controls">
+            <button type="button" data-cart-action="decrease" data-item="${item.name}" aria-label="Decrease ${item.name} quantity">−</button>
+            <strong>${item.quantity}</strong>
+            <button type="button" data-cart-action="increase" data-item="${item.name}" aria-label="Increase ${item.name} quantity">+</button>
+          </div>
+        `;
+        cartItems.append(row);
+      });
+    }
+
+    function addToCart(name, price, image) {
+      const item = cart.find((entry) => entry.name === name);
+      if (item) {
+        item.quantity += 1;
+        item.image = image;
+      } else cart.push({ name, price, image, quantity: 1 });
+      saveCart();
+      updateCart();
+      window.location.href = "cart.html";
+    }
+
+    function updateLoginButton() {
+      const user = userDataStore.getUser();
+      loginButton.textContent = user ? `Log out (${user.username})` : "Login";
+      loginButton.setAttribute("aria-label", user ? `Log out ${user.username}` : "Login");
+    }
 
     function closeLoginDialog() {
       loginDialog.classList.remove("is-open");
@@ -281,6 +390,12 @@
     }
 
     loginButton.addEventListener("click", () => {
+      if (userDataStore.getUser()) {
+        userDataStore.clearUser();
+        loginStatus.textContent = "You have been logged out.";
+        updateLoginButton();
+        return;
+      }
       loginDialog.classList.add("is-open");
       loginDialog.querySelector("input").focus();
     });
@@ -290,8 +405,44 @@
     });
     loginForm.addEventListener("submit", (event) => {
       event.preventDefault();
+      const formData = new FormData(loginForm);
+      userDataStore.saveUser({
+        username: formData.get("username"),
+        email: formData.get("email")
+      });
+      loginStatus.textContent = "Your profile has been saved on this device.";
+      updateLoginButton();
       closeLoginDialog();
     });
+
+    cartButton.addEventListener("click", () => {
+      window.location.href = "cart.html";
+    });
+    closeCartButton.addEventListener("click", () => cartDialog.classList.remove("is-open"));
+    cartDialog.addEventListener("click", (event) => {
+      if (event.target === cartDialog) cartDialog.classList.remove("is-open");
+      const actionButton = event.target.closest("[data-cart-action]");
+      if (!actionButton) return;
+      const item = cart.find((entry) => entry.name === actionButton.dataset.item);
+      if (!item) return;
+      if (actionButton.dataset.cartAction === "increase") item.quantity += 1;
+      if (actionButton.dataset.cartAction === "decrease") item.quantity -= 1;
+      cart = cart.filter((entry) => entry.quantity > 0);
+      saveCart();
+      updateCart();
+    });
+    document.querySelectorAll(".add").forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".dish-card");
+        const name = card.querySelector("h3").textContent;
+        const price = Number(card.querySelector(".price").textContent.replace(/[^\d]/g, ""));
+        const image = dishImages[[...card.querySelector(".dish-photo").classList].find((className) => dishImages[className])];
+        addToCart(name, price, image);
+      });
+    });
+
+    updateCart();
+    updateLoginButton();
   </script>
 </body>
 </html>
