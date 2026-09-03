@@ -20,23 +20,31 @@
     }
 
     * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 24px; }
     body { margin: 0; color: var(--ink); background: var(--cream); }
     a { color: inherit; text-decoration: none; }
     button { font: inherit; cursor: pointer; }
+    a, button, input { transition: color .35s ease, background-color .35s ease, border-color .35s ease, box-shadow .35s ease, transform .35s cubic-bezier(.22, 1, .36, 1), opacity .35s ease; }
+    a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid rgba(238, 117, 72, .45); outline-offset: 3px; }
     .container { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
 
     header {
       padding: 22px 0;
       background: var(--cream);
+      animation: slide-down .7s ease both;
     }
     nav { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
     .brand { display: flex; align-items: center; gap: 10px; font-size: 1.4rem; font-weight: 800; letter-spacing: -0.04em; }
     .brand-mark {
       display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px;
       color: white; background: var(--orange); font-size: 1.25rem;
+      animation: soft-pulse 3s ease-in-out 1s infinite;
     }
     .nav-links { display: flex; gap: 32px; color: var(--muted); font-size: .92rem; font-weight: 600; }
+    .nav-links a { position: relative; }
+    .nav-links a::after { content: ""; position: absolute; right: 0; bottom: -7px; left: 0; height: 2px; background: var(--orange); transform: scaleX(0); transform-origin: right; transition: transform .25s ease; }
     .nav-links a:first-child, .nav-links a:hover { color: var(--orange-dark); }
+    .nav-links a:hover::after, .nav-links a:focus-visible::after { transform: scaleX(1); transform-origin: left; }
     .nav-actions { display: flex; align-items: center; gap: 10px; }
     .cart {
       display: flex; align-items: center; gap: 9px; border: 1px solid var(--line);
@@ -116,14 +124,14 @@
       border: 0; border-radius: 12px; padding: 15px 22px; color: white; background: var(--orange);
       box-shadow: 0 10px 20px rgba(238, 117, 72, .22); font-weight: 800;
     }
-    .primary-button:hover { background: var(--orange-dark); transform: translateY(-1px); }
+    .primary-button:hover { background: var(--orange-dark); transform: translateY(-3px); box-shadow: 0 14px 24px rgba(238, 117, 72, .28); }
     .text-link { color: var(--ink); font-weight: 800; font-size: .92rem; }
     .text-link::after { content: " →"; color: var(--orange); }
     .hero-image {
       position: relative; min-height: 455px; border-radius: 44% 44% 22% 22%; background:
         linear-gradient(135deg, rgba(255,255,255,.1), rgba(0,0,0,.15)),
         url("https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=900&q=85") center/cover;
-      box-shadow: var(--shadow); transform: rotate(2deg);
+      box-shadow: var(--shadow); transform: rotate(2deg); animation: float-image 6s ease-in-out 1s infinite;
     }
     .hero-image::after { content: ""; position: absolute; inset: 18px; border: 1px solid rgba(255,255,255,.5); border-radius: inherit; }
     .rating {
@@ -133,21 +141,23 @@
     .rating strong { display: block; margin-bottom: 3px; font-size: 1.15rem; }
     .stars { color: #f3a23d; letter-spacing: 2px; }
 
-    section { padding: 76px 0; }
+    section { padding: 76px 0; scroll-margin-top: 24px; }
     .section-heading { display: flex; align-items: end; justify-content: space-between; margin-bottom: 30px; }
     h2 { margin: 8px 0 0; font-size: clamp(2rem, 4vw, 3rem); letter-spacing: -.06em; }
     .categories { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
     .category {
       display: flex; align-items: center; gap: 13px; padding: 17px; border: 1px solid var(--line); border-radius: 14px;
-      background: var(--paper); font-weight: 800; transition: .2s ease;
+      background: var(--paper); font-weight: 800;
     }
-    .category:hover { border-color: var(--orange); transform: translateY(-3px); }
+    .category:hover { border-color: var(--orange); transform: translateY(-5px); box-shadow: 0 12px 25px rgba(53, 62, 47, .09); }
     .category-icon { display: grid; place-items: center; width: 45px; height: 45px; border-radius: 12px; background: var(--sage); font-size: 1.5rem; }
     .category small { display: block; margin-top: 3px; color: var(--muted); font-size: .72rem; font-weight: 500; }
     .dishes { background: #f6f3eb; }
     .dish-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
     .dish-card { overflow: hidden; border-radius: 18px; background: var(--paper); box-shadow: 0 7px 22px rgba(53,62,47,.05); }
-    .dish-photo { height: 205px; background-size: cover; background-position: center; }
+    .dish-card:hover { transform: translateY(-7px); box-shadow: 0 18px 30px rgba(53,62,47,.12); }
+    .dish-photo { height: 205px; background-size: cover; background-position: center; transition: transform .5s ease; }
+    .dish-card:hover .dish-photo { transform: scale(1.06); }
     .photo-one { background-image: url("https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=600&q=80"); }
     .photo-two { background-image: url("https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600&q=80"); }
     .photo-three { background-image: url("https://images.unsplash.com/photo-1563379926898-05f4575a45d8?auto=format&fit=crop&w=600&q=80"); }
@@ -160,13 +170,13 @@
     .dish-bottom { display: flex; align-items: center; justify-content: space-between; }
     .price { color: var(--orange-dark); font-size: 1.1rem; font-weight: 900; }
     .add { display: grid; place-items: center; width: 34px; height: 34px; border: 0; border-radius: 10px; color: white; background: var(--ink); font-size: 1.2rem; }
-    .add:hover { background: var(--orange); }
+    .add:hover { background: var(--orange); transform: rotate(90deg) scale(1.08); }
 
     .promo { padding-top: 0; }
     .promo-box { display: grid; grid-template-columns: 1.3fr .7fr; align-items: center; min-height: 240px; padding: 42px 55px; border-radius: 24px; color: white; background: var(--ink); overflow: hidden; }
     .promo-box h2 { max-width: 550px; color: white; }
     .promo-box p { color: #b8c3bb; }
-    .promo-art { justify-self: end; font-size: 8rem; transform: rotate(15deg); }
+    .promo-art { justify-self: end; font-size: 8rem; transform: rotate(15deg); animation: float-art 4s ease-in-out infinite; }
     .contact { padding-top: 0; }
     .contact-grid { display: grid; grid-template-columns: .8fr 1.2fr; gap: 22px; }
     .contact-card { padding: 28px; border-radius: 18px; background: var(--sage); }
@@ -178,6 +188,27 @@
     .contact-item a, .contact-item span { color: var(--ink); font-size: .95rem; font-weight: 700; line-height: 1.5; }
     footer { padding: 28px 0; border-top: 1px solid var(--line); color: var(--muted); font-size: .82rem; }
     .footer-inner { display: flex; justify-content: space-between; gap: 20px; }
+
+    .hero > .container > div:first-child { animation: reveal-up .8s .15s cubic-bezier(.22, 1, .36, 1) both; }
+    .hero-image { animation: reveal-up .8s .3s cubic-bezier(.22, 1, .36, 1) both, float-image 6s 1.2s ease-in-out infinite; }
+    #menu .section-heading, #dishes .section-heading { animation: reveal-up .7s cubic-bezier(.22, 1, .36, 1) both; }
+    .category, .dish-card, .contact-item { animation: reveal-up .65s cubic-bezier(.22, 1, .36, 1) both; }
+    .scroll-reveal { opacity: 0; transform: translateY(24px); transition: opacity .8s ease, transform .8s cubic-bezier(.22, 1, .36, 1); }
+    .scroll-reveal.is-visible { opacity: 1; transform: translateY(0); }
+    .category:nth-child(2), .dish-card:nth-child(2), .contact-item:nth-child(2) { animation-delay: .08s; }
+    .category:nth-child(3), .dish-card:nth-child(3), .contact-item:nth-child(3) { animation-delay: .16s; }
+    .category:nth-child(4), .dish-card:nth-child(4), .contact-item:nth-child(4) { animation-delay: .24s; }
+    .dish-card:nth-child(5) { animation-delay: .32s; }
+    .dish-card:nth-child(6) { animation-delay: .4s; }
+    @keyframes reveal-up { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slide-down { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes float-image { 0%, 100% { transform: rotate(2deg) translateY(0); } 50% { transform: rotate(2deg) translateY(-8px); } }
+    @keyframes float-art { 0%, 100% { transform: rotate(15deg) translateY(0); } 50% { transform: rotate(20deg) translateY(-10px); } }
+    @keyframes soft-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(238, 117, 72, .18); } 50% { box-shadow: 0 0 0 8px rgba(238, 117, 72, 0); } }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+      .scroll-reveal { opacity: 1; transform: none; }
+    }
 
     @media (max-width: 760px) {
       .nav-links { display: none; }
@@ -285,7 +316,7 @@
       <div class="eyebrow">Welcome back</div>
       <h2 id="login-title">Log in to your account</h2>
       <p class="login-modal-intro">Save your favorite dishes and make your next order even easier.</p>
-      <form class="login-form">
+      <form class="login-form" action="/api/auth/login" method="post" autocomplete="on">
         <label for="username">Username
           <input id="username" name="username" type="text" autocomplete="username" placeholder="Enter your username" required>
         </label>
@@ -561,6 +592,19 @@
         addToCart(name, price, image);
       });
     });
+
+    const revealItems = document.querySelectorAll("#menu, #dishes, #story, #contact");
+    if ("IntersectionObserver" in window) {
+      revealItems.forEach((item) => item.classList.add("scroll-reveal"));
+      const revealObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add("is-visible");
+          observer.unobserve(entry.target);
+        });
+      }, { threshold: 0.12, rootMargin: "0px 0px -8% 0px" });
+      revealItems.forEach((item) => revealObserver.observe(item));
+    }
 
     updateCart();
     updateLoginButton();
