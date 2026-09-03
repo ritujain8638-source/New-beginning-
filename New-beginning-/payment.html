@@ -75,6 +75,18 @@
     const cart = JSON.parse(localStorage.getItem("foodWithHeathCart") || "[]");
     let total = 0;
 
+    async function readApiResponse(response) {
+      const text = await response.text();
+      let result;
+      try {
+        result = text ? JSON.parse(text) : {};
+      } catch {
+        result = { error: text || `Payment failed (${response.status}).` };
+      }
+      if (!response.ok) throw new Error(result.error || `Payment failed (${response.status}).`);
+      return result;
+    }
+
     cart.forEach((item) => {
       total += item.price * item.quantity;
       const row = document.createElement("article");
@@ -105,8 +117,7 @@
             paymentToken: `demo_${crypto.randomUUID()}`
           })
         });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error || "Payment failed.");
+        const result = await readApiResponse(response);
         localStorage.removeItem("foodWithHeathCart");
         status.textContent = `Payment successful for ${result.items.map((item) => `${item.name} × ${item.quantity}`).join(", ")}. Total: ₹${result.total}.`;
         form.reset();

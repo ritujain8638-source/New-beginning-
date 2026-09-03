@@ -65,12 +65,15 @@ app.use(session({
   }
 }));
 app.use(express.static(__dirname));
+app.get("/", (_req, res) => {
+  res.sendFile(path.join(__dirname, "first.html"));
+});
 
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: true });
 const paymentLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: true });
 
 function requireAuth(req, res, next) {
-  if (!req.session.userId) return res.status(401).json({ error: "You must be logged in." });
+  if (!req.session.userId && !req.session.demoUser) return res.status(401).json({ error: "You must be logged in." });
   next();
 }
 
@@ -90,8 +93,11 @@ app.post("/api/auth/register", authLimiter, async (req, res) => {
     const result = database.prepare(
       "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)"
     ).run(username.trim(), email.trim().toLowerCase(), passwordHash);
-    req.session.userId = result.lastInsertRowid;
-    res.status(201).json({ username: username.trim(), email: email.trim().toLowerCase() });
+    req.session.regenerate((sessionError) => {
+      if (sessionError) return res.status(500).json({ error: "Unable to start a secure session." });
+      req.session.userId = result.lastInsertRowid;
+      res.status(201).json({ username: username.trim(), email: email.trim().toLowerCase() });
+    });
   } catch (error) {
     if (error.code === "SQLITE_CONSTRAINT_UNIQUE") {
       return res.status(409).json({ error: "Username or email is already registered." });
@@ -108,8 +114,28 @@ app.post("/api/auth/login", authLimiter, async (req, res) => {
   if (!user || !(await bcrypt.compare(password || "", user.password_hash))) {
     return res.status(401).json({ error: "Invalid username, email, or password." });
   }
-  req.session.userId = user.id;
-  res.json({ username: user.username, email: user.email });
+  req.session.regenerate((sessionError) => {
+    if (sessionError) return res.status(500).json({ error: "Unable to start a secure session." });
+    req.session.userId = user.id;
+    res.json({ username: user.username, email: user.email });
+  });
+});
+
+app.post("/api/auth/demo-login", authLimiter, (req, res) => {
+  const { username, email } = req.body;
+  if (typeof username !== "string" || username.trim().length < 2 ||
+      typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: "Username and valid email are required." });
+  }
+  req.session.regenerate((sessionError) => {
+    if (sessionError) return res.status(500).json({ error: "Unable to start a secure session." });
+    req.session.userId = null;
+    req.session.demoUser = {
+      username: username.trim(),
+      email: email.trim().toLowerCase()
+    };
+    res.json(req.session.demoUser);
+  });
 });
 
 app.post("/api/auth/logout", requireAuth, (req, res) => {
@@ -121,6 +147,7 @@ app.post("/api/auth/logout", requireAuth, (req, res) => {
 });
 
 app.get("/api/auth/me", (req, res) => {
+  if (req.session.demoUser) return res.json(req.session.demoUser);
   if (!req.session.userId) return res.status(401).json({ error: "Not logged in." });
   const user = database.prepare("SELECT username, email FROM users WHERE id = ?").get(req.session.userId);
   if (!user) return res.status(401).json({ error: "Not logged in." });
