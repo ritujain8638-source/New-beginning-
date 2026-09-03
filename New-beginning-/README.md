@@ -25,4 +25,8 @@ New users can select **Create account** with a username, email, and password of 
 
 When users return, the server session restores their login when it is still valid. If they need to log in again, the saved username and email are prefilled; the password is always requested again and is never saved.
 
+After a password login or account creation, the site offers to save the username and password through the browser's password manager. The website itself never stores the password in localStorage.
+
+The **Forgot password** page accepts the account email and creates a single-use reset link that expires after 15 minutes. In development, the link is shown on the page because no email provider is configured. In production, configure an email provider before exposing reset links to users; the API intentionally returns the same message whether or not the email belongs to an account.
+
 The checkout is still a demo payment flow. For real payments, replace the demo token with a token from a provider such as Stripe or Razorpay; never send raw card details to this server or store them.

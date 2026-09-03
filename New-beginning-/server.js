@@ -38,6 +38,13 @@ database.exec(`
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
+  CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    token_hash TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
 `);
 const catalog = new Map([
   ["Green goddess bowl", 399],
@@ -119,6 +126,52 @@ app.post("/api/auth/login", authLimiter, async (req, res) => {
     req.session.userId = user.id;
     res.json({ username: user.username, email: user.email });
   });
+});
+
+app.post("/api/auth/forgot-password", authLimiter, (req, res) => {
+  const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+  const genericResponse = { message: "If an account uses that email, a password-reset link has been created." };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: "Enter a valid email address." });
+  }
+
+  database.prepare("DELETE FROM password_reset_tokens WHERE expires_at <= ?").run(Date.now());
+  const user = database.prepare("SELECT id FROM users WHERE email = ?").get(email);
+  if (!user) return res.json(genericResponse);
+
+  const token = crypto.randomBytes(32).toString("hex");
+  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+  database.prepare(
+    "INSERT INTO password_reset_tokens (token_hash, user_id, expires_at) VALUES (?, ?, ?)"
+  ).run(tokenHash, user.id, Date.now() + 15 * 60 * 1000);
+
+  if (isProduction) return res.json(genericResponse);
+  res.json({
+    ...genericResponse,
+    resetUrl: `${req.protocol}://${req.get("host")}/forgot-password.html?token=${token}`
+  });
+});
+
+app.post("/api/auth/reset-password", authLimiter, async (req, res) => {
+  const token = typeof req.body.token === "string" ? req.body.token : "";
+  const password = typeof req.body.password === "string" ? req.body.password : "";
+  if (!/^[a-f0-9]{64}$/.test(token) || password.length < 8) {
+    return res.status(400).json({ error: "A valid reset link and an 8-character password are required." });
+  }
+
+  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+  const resetToken = database.prepare(
+    "SELECT user_id FROM password_reset_tokens WHERE token_hash = ? AND expires_at > ?"
+  ).get(tokenHash, Date.now());
+  if (!resetToken) return res.status(400).json({ error: "This reset link is invalid or has expired." });
+
+  const passwordHash = await bcrypt.hash(password, 12);
+  const updatePassword = database.transaction(() => {
+    database.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(passwordHash, resetToken.user_id);
+    database.prepare("DELETE FROM password_reset_tokens WHERE token_hash = ?").run(tokenHash);
+  });
+  updatePassword();
+  res.json({ message: "Password changed successfully. You can now log in." });
 });
 
 app.post("/api/auth/demo-login", authLimiter, (req, res) => {
