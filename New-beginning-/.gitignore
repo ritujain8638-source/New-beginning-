@@ -1,0 +1,8 @@
+node_modules/
+.env
+food-with-heath.sqlite
+food-with-heath.sqlite-shm
+food-with-heath.sqlite-wal
+sessions.sqlite
+sessions.sqlite-shm
+sessions.sqlite-wal
