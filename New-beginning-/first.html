@@ -1,11 +1,297 @@
-<!DOCTYPE html> 
-<html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Food with Heath brings comforting, flavorful food to your table.">
+  <title>Food with Heath | Good food, good mood</title>
+  <style>
+    :root {
+      --ink: #21312b;
+      --muted: #6e7c74;
+      --cream: #fffaf2;
+      --paper: #ffffff;
+      --orange: #ee7548;
+      --orange-dark: #d85e36;
+      --sage: #dfe9d8;
+      --line: #e9e8e2;
+      --shadow: 0 18px 45px rgba(53, 62, 47, 0.1);
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+    }
 
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--ink); background: var(--cream); }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; cursor: pointer; }
+    .container { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
 
+    header {
+      padding: 22px 0;
+      background: var(--cream);
+    }
+    nav { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-size: 1.4rem; font-weight: 800; letter-spacing: -0.04em; }
+    .brand-mark {
+      display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px;
+      color: white; background: var(--orange); font-size: 1.25rem;
+    }
+    .nav-links { display: flex; gap: 32px; color: var(--muted); font-size: .92rem; font-weight: 600; }
+    .nav-links a:first-child, .nav-links a:hover { color: var(--orange-dark); }
+    .nav-actions { display: flex; align-items: center; gap: 10px; }
+    .cart {
+      display: flex; align-items: center; gap: 9px; border: 1px solid var(--line);
+      border-radius: 99px; padding: 10px 16px; background: var(--paper); color: var(--ink);
+      font-weight: 700; font-size: .9rem;
+    }
+    .cart span { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; color: white; background: var(--orange); font-size: .7rem; }
+    .login-button {
+      border: 0; border-radius: 99px; padding: 11px 18px; color: white; background: var(--ink);
+      font-size: .9rem; font-weight: 800;
+    }
+    .login-button:hover { background: var(--orange); }
+    .modal-backdrop {
+      display: none; position: fixed; z-index: 10; inset: 0; place-items: center; padding: 20px;
+      background: rgba(33, 49, 43, .55);
+    }
+    .modal-backdrop.is-open { display: grid; }
+    .login-modal {
+      position: relative; width: min(100%, 430px); padding: 34px; border-radius: 22px;
+      background: var(--paper); box-shadow: var(--shadow);
+    }
+    .login-modal h2 { margin: 7px 0 8px; font-size: 2rem; }
+    .login-modal-intro { margin: 0 0 22px; color: var(--muted); font-size: .9rem; line-height: 1.5; }
+    .close-modal {
+      position: absolute; top: 15px; right: 18px; border: 0; background: transparent;
+      color: var(--muted); font-size: 1.5rem; line-height: 1;
+    }
+    .close-modal:hover { color: var(--orange-dark); }
+    .login-form { display: grid; gap: 15px; }
+    .login-form label { display: grid; gap: 7px; color: var(--ink); font-size: .82rem; font-weight: 800; }
+    .login-form input {
+      width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 12px 13px;
+      color: var(--ink); background: #fffdf9; font: inherit; outline: 0;
+    }
+    .login-form input:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(238, 117, 72, .14); }
+    .login-form .primary-button { margin-top: 3px; }
 
+    .hero { padding: 54px 0 75px; overflow: hidden; }
+    .hero-grid { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 52px; }
+    .eyebrow { color: var(--orange-dark); font-size: .78rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+    h1 { max-width: 560px; margin: 14px 0 20px; font-size: clamp(3rem, 6vw, 5.6rem); line-height: .96; letter-spacing: -.08em; }
+    .hero-copy { max-width: 450px; color: var(--muted); font-size: 1.08rem; line-height: 1.7; }
+    .actions { display: flex; align-items: center; gap: 20px; margin-top: 30px; }
+    .primary-button {
+      border: 0; border-radius: 12px; padding: 15px 22px; color: white; background: var(--orange);
+      box-shadow: 0 10px 20px rgba(238, 117, 72, .22); font-weight: 800;
+    }
+    .primary-button:hover { background: var(--orange-dark); transform: translateY(-1px); }
+    .text-link { color: var(--ink); font-weight: 800; font-size: .92rem; }
+    .text-link::after { content: " →"; color: var(--orange); }
+    .hero-image {
+      position: relative; min-height: 455px; border-radius: 44% 44% 22% 22%; background:
+        linear-gradient(135deg, rgba(255,255,255,.1), rgba(0,0,0,.15)),
+        url("https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=900&q=85") center/cover;
+      box-shadow: var(--shadow); transform: rotate(2deg);
+    }
+    .hero-image::after { content: ""; position: absolute; inset: 18px; border: 1px solid rgba(255,255,255,.5); border-radius: inherit; }
+    .rating {
+      position: absolute; z-index: 1; bottom: 28px; left: -25px; padding: 15px 19px; border-radius: 14px;
+      background: var(--paper); box-shadow: var(--shadow); font-size: .85rem; font-weight: 700; transform: rotate(-2deg);
+    }
+    .rating strong { display: block; margin-bottom: 3px; font-size: 1.15rem; }
+    .stars { color: #f3a23d; letter-spacing: 2px; }
 
+    section { padding: 76px 0; }
+    .section-heading { display: flex; align-items: end; justify-content: space-between; margin-bottom: 30px; }
+    h2 { margin: 8px 0 0; font-size: clamp(2rem, 4vw, 3rem); letter-spacing: -.06em; }
+    .categories { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .category {
+      display: flex; align-items: center; gap: 13px; padding: 17px; border: 1px solid var(--line); border-radius: 14px;
+      background: var(--paper); font-weight: 800; transition: .2s ease;
+    }
+    .category:hover { border-color: var(--orange); transform: translateY(-3px); }
+    .category-icon { display: grid; place-items: center; width: 45px; height: 45px; border-radius: 12px; background: var(--sage); font-size: 1.5rem; }
+    .category small { display: block; margin-top: 3px; color: var(--muted); font-size: .72rem; font-weight: 500; }
+    .dishes { background: #f6f3eb; }
+    .dish-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+    .dish-card { overflow: hidden; border-radius: 18px; background: var(--paper); box-shadow: 0 7px 22px rgba(53,62,47,.05); }
+    .dish-photo { height: 205px; background-size: cover; background-position: center; }
+    .photo-one { background-image: url("https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=600&q=80"); }
+    .photo-two { background-image: url("https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600&q=80"); }
+    .photo-three { background-image: url("https://images.unsplash.com/photo-1563379926898-05f4575a45d8?auto=format&fit=crop&w=600&q=80"); }
+    .photo-four { background-image: url("https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80"); }
+    .photo-five { background-image: url("https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=600&q=80"); }
+    .photo-six { background-image: url("https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=600&q=80"); }
+    .dish-info { padding: 20px; }
+    .dish-info h3 { margin: 0 0 8px; font-size: 1.18rem; }
+    .dish-info p { min-height: 43px; margin: 0 0 17px; color: var(--muted); font-size: .84rem; line-height: 1.5; }
+    .dish-bottom { display: flex; align-items: center; justify-content: space-between; }
+    .price { color: var(--orange-dark); font-size: 1.1rem; font-weight: 900; }
+    .add { display: grid; place-items: center; width: 34px; height: 34px; border: 0; border-radius: 10px; color: white; background: var(--ink); font-size: 1.2rem; }
+    .add:hover { background: var(--orange); }
 
+    .promo { padding-top: 0; }
+    .promo-box { display: grid; grid-template-columns: 1.3fr .7fr; align-items: center; min-height: 240px; padding: 42px 55px; border-radius: 24px; color: white; background: var(--ink); overflow: hidden; }
+    .promo-box h2 { max-width: 550px; color: white; }
+    .promo-box p { color: #b8c3bb; }
+    .promo-art { justify-self: end; font-size: 8rem; transform: rotate(15deg); }
+    .contact { padding-top: 0; }
+    .contact-grid { display: grid; grid-template-columns: .8fr 1.2fr; gap: 22px; }
+    .contact-card { padding: 28px; border-radius: 18px; background: var(--sage); }
+    .contact-card h2 { margin-bottom: 12px; }
+    .contact-card p { max-width: 360px; color: var(--muted); line-height: 1.6; }
+    .contact-details { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .contact-item { padding: 21px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); }
+    .contact-item strong { display: block; margin-bottom: 7px; font-size: .78rem; color: var(--orange-dark); text-transform: uppercase; letter-spacing: .08em; }
+    .contact-item a, .contact-item span { color: var(--ink); font-size: .95rem; font-weight: 700; line-height: 1.5; }
+    footer { padding: 28px 0; border-top: 1px solid var(--line); color: var(--muted); font-size: .82rem; }
+    .footer-inner { display: flex; justify-content: space-between; gap: 20px; }
 
+    @media (max-width: 760px) {
+      .nav-links { display: none; }
+      .hero { padding-top: 25px; }
+      .hero-grid { grid-template-columns: 1fr; gap: 36px; }
+      .hero-image { min-height: 340px; }
+      .categories { grid-template-columns: repeat(2, 1fr); }
+      .dish-grid { grid-template-columns: 1fr; }
+      .promo-box { grid-template-columns: 1fr; padding: 35px 28px; }
+      .promo-art { display: none; }
+      .contact-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 430px) {
+      .container { width: min(100% - 28px, 1120px); }
+      .cart { padding: 9px 11px; }
+      .categories { gap: 10px; }
+      .category { padding: 12px; font-size: .83rem; }
+      .category-icon { width: 36px; height: 36px; font-size: 1.15rem; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="container" aria-label="Main navigation">
+      <a class="brand" href="#"><span class="brand-mark">✦</span> food with heath</a>
+      <div class="nav-links">
+        <a href="#menu">Menu</a><a href="#story">Our story</a><a href="#contact">Contact</a>
+      </div>
+      <div class="nav-actions">
+        <button class="login-button" type="button" aria-haspopup="dialog" aria-controls="login-dialog">Login</button>
+        <button class="cart" type="button" aria-label="View your cart">Cart <span>2</span></button>
+      </div>
+    </nav>
+  </header>
 
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <div class="eyebrow">Freshly made, always delicious</div>
+          <h1>Good food.<br><em>Good mood.</em></h1>
+          <p class="hero-copy">Thoughtful ingredients, generous portions, and recipes made to bring people together. Your next favorite meal is just a click away.</p>
+          <div class="actions"><a class="primary-button" href="#menu">Explore the menu</a><a class="text-link" href="#story">How we cook</a></div>
+        </div>
+        <div class="hero-image" role="img" aria-label="A colorful bowl of fresh food">
+          <div class="rating"><strong>4.9 / 5</strong><span class="stars">★★★★★</span> <small>from 2k+ foodies</small></div>
+        </div>
+      </div>
+    </section>
 
+    <section id="menu">
+      <div class="container">
+        <div class="section-heading"><div><div class="eyebrow">What are you craving?</div><h2>Pick your pleasure</h2></div><a class="text-link" href="#dishes">See all dishes</a></div>
+        <div class="categories">
+          <a class="category" href="#dishes"><span class="category-icon">🥗</span><span>Healthy<small>12 options</small></span></a>
+          <a class="category" href="#dishes"><span class="category-icon">🍔</span><span>Comfort<small>18 options</small></span></a>
+          <a class="category" href="#dishes"><span class="category-icon">🍝</span><span>Italian<small>9 options</small></span></a>
+          <a class="category" href="#dishes"><span class="category-icon">🍰</span><span>Sweet tooth<small>7 options</small></span></a>
+        </div>
+      </div>
+    </section>
+
+    <section class="dishes" id="dishes">
+      <div class="container">
+        <div class="section-heading"><div><div class="eyebrow">Our most loved</div><h2>Today's favorites</h2></div><a class="text-link" href="#menu">View full menu</a></div>
+        <div class="dish-grid">
+          <article class="dish-card"><div class="dish-photo photo-one"></div><div class="dish-info"><h3>Green goddess bowl</h3><p>Avocado, roasted chickpeas, crunchy greens and our house tahini.</p><div class="dish-bottom"><span class="price">₹399</span><button class="add" type="button" aria-label="Add Green goddess bowl to cart">+</button></div></div></article>
+          <article class="dish-card"><div class="dish-photo photo-two"></div><div class="dish-info"><h3>Garden crunch salad</h3><p>Seasonal vegetables, toasted seeds and a bright citrus dressing.</p><div class="dish-bottom"><span class="price">₹329</span><button class="add" type="button" aria-label="Add Garden crunch salad to cart">+</button></div></div></article>
+          <article class="dish-card"><div class="dish-photo photo-three"></div><div class="dish-info"><h3>Sunday pomodoro</h3><p>Silky tomato sauce, fresh basil, parmesan and handmade pasta.</p><div class="dish-bottom"><span class="price">₹449</span><button class="add" type="button" aria-label="Add Sunday pomodoro to cart">+</button></div></div></article>
+          <article class="dish-card"><div class="dish-photo photo-four"></div><div class="dish-info"><h3>Stacked house burger</h3><p>Juicy smashed patty, sharp cheddar, pickles and our signature sauce.</p><div class="dish-bottom"><span class="price">₹429</span><button class="add" type="button" aria-label="Add Stacked house burger to cart">+</button></div></div></article>
+          <article class="dish-card"><div class="dish-photo photo-five"></div><div class="dish-info"><h3>Salted caramel cloud</h3><p>Warm chocolate cake, soft vanilla cream and a salted caramel drizzle.</p><div class="dish-bottom"><span class="price">₹229</span><button class="add" type="button" aria-label="Add Salted caramel cloud to cart">+</button></div></div></article>
+          <article class="dish-card"><div class="dish-photo photo-six"></div><div class="dish-info"><h3>Peach basil fizz</h3><p>Fresh peach, basil, sparkling water and a squeeze of lime.</p><div class="dish-bottom"><span class="price">₹169</span><button class="add" type="button" aria-label="Add Peach basil fizz to cart">+</button></div></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="promo" id="story">
+      <div class="container promo-box">
+        <div><div class="eyebrow">A little extra joy</div><h2>Get 20% off your first order.</h2><p>Join the Food with Heath table for seasonal menus, special treats, and good news in your inbox.</p><a class="primary-button" href="#contact">Claim your welcome treat</a></div>
+        <div class="promo-art" aria-hidden="true">🍋</div>
+      </div>
+    </section>
+
+    <section class="contact" id="contact">
+      <div class="container contact-grid">
+        <div class="contact-card">
+          <div class="eyebrow">Come say hello</div>
+          <h2>Let's make it a meal.</h2>
+          <p>Whether you are planning a celebration or just craving something delicious, our team is here to help.</p>
+          <a class="text-link" href="mailto:hello@foodwithheath.com">Email our team</a>
+        </div>
+        <div class="contact-details">
+          <div class="contact-item"><strong>Visit us</strong><span>24 Market Street<br>Brooklyn, NY 11201</span></div>
+          <div class="contact-item"><strong>Call us</strong><a href="tel:+918595073414">91-8595073414</a></div>
+          <div class="contact-item"><strong>Email</strong><a href="mailto:hello@foodwithheath.com">hello@foodwithheath.com</a></div>
+          <div class="contact-item"><strong>Hours</strong><span>Mon–Sun<br>11:00 AM – 10:00 PM</span></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="login-dialog" role="dialog" aria-modal="true" aria-labelledby="login-title">
+    <div class="login-modal">
+      <button class="close-modal" type="button" aria-label="Close login form">×</button>
+      <div class="eyebrow">Welcome back</div>
+      <h2 id="login-title">Log in to your account</h2>
+      <p class="login-modal-intro">Save your favorite dishes and make your next order even easier.</p>
+      <form class="login-form">
+        <label for="username">Username
+          <input id="username" name="username" type="text" autocomplete="username" placeholder="Enter your username" required>
+        </label>
+        <label for="email">Email address
+          <input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required>
+        </label>
+        <label for="password">Password
+          <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required>
+        </label>
+        <button class="primary-button" type="submit">Log in</button>
+      </form>
+    </div>
+  </div>
+
+  <footer><div class="container footer-inner"><span>© 2024 Food with Heath</span><span>Made with care, served with joy.</span></div></footer>
+  <script>
+    const loginDialog = document.querySelector("#login-dialog");
+    const loginButton = document.querySelector(".login-button");
+    const closeLoginButton = document.querySelector(".close-modal");
+    const loginForm = document.querySelector(".login-form");
+
+    function closeLoginDialog() {
+      loginDialog.classList.remove("is-open");
+      loginButton.focus();
+    }
+
+    loginButton.addEventListener("click", () => {
+      loginDialog.classList.add("is-open");
+      loginDialog.querySelector("input").focus();
+    });
+    closeLoginButton.addEventListener("click", closeLoginDialog);
+    loginDialog.addEventListener("click", (event) => {
+      if (event.target === loginDialog) closeLoginDialog();
+    });
+    loginForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      closeLoginDialog();
+    });
+  </script>
+</body>
 </html>
