@@ -491,6 +491,14 @@
       loginButton.focus();
     }
 
+    function returnToCheckoutIfNeeded() {
+      if (new URLSearchParams(window.location.search).get("login") === "1") {
+        window.location.href = "payment.html";
+        return true;
+      }
+      return false;
+    }
+
     function offerSavePassword(user, password) {
       if (!password) return;
       savePasswordPopover.classList.add("is-open");
@@ -576,6 +584,7 @@
         loginForm.reset();
         updateLoginButton();
         closeLoginDialog();
+        returnToCheckoutIfNeeded();
       } catch (error) {
         loginStatus.textContent = error.message;
       }
@@ -604,6 +613,7 @@
         loginForm.reset();
         updateLoginButton();
         closeLoginDialog();
+        returnToCheckoutIfNeeded();
       } catch (error) {
         loginStatus.textContent = error.message;
       }
