@@ -1,0 +1,11 @@
+{
+  "name": "food-with-heath-render",
+  "private": true,
+  "scripts": {
+    "postinstall": "npm install --prefix New-beginning-",
+    "start": "npm start --prefix New-beginning-"
+  },
+  "engines": {
+    "node": ">=20 <26"
+  }
+}
