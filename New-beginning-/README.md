@@ -28,7 +28,7 @@ The repository includes a Vercel configuration for the frontend and a Render Blu
 3. In Vercel, import this repository and set the project root directory to `New-beginning-`. The frontend is already configured to call `https://food-with-heath-api.onrender.com`.
 4. Redeploy Render after setting `FRONTEND_URL`, then check `https://food-with-heath-api.onrender.com/api/health` returns `{"status":"ok"}`.
 
-The public checkout remains a demo until a payment provider is integrated. A production email provider is also required for password-reset delivery. Guest demo login is for browsing only; checkout requires a registered account or password login.
+The checkout uses Razorpay's hosted checkout. Add `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` to `.env` locally or to the Render service environment. Use Razorpay test keys while testing; switch to live keys only after completing Razorpay account verification. A production email provider is also required for password-reset delivery. Guest demo login is for browsing only; checkout requires a registered account or password login.
 
 The server provides hashed-password accounts, HTTP-only sessions, SQLite orders, rate-limited authentication and order endpoints, and security headers.
 
@@ -44,4 +44,4 @@ After a password login or account creation, the site offers to save the username
 
 The **Forgot password** page accepts the account email and creates a single-use reset link that expires after 15 minutes. In development, the link is shown on the page because no email provider is configured. In production, configure an email provider before exposing reset links to users; the API intentionally returns the same message whether or not the email belongs to an account.
 
-The checkout is still a demo payment flow. For real payments, replace the demo token with a token from a provider such as Stripe or Razorpay; never send raw card details to this server or store them.
+Razorpay creates the payment order server-side and verifies its HMAC signature server-side before the order is saved. The browser never sends raw card details to this server, and the Razorpay secret key is never exposed to the frontend.

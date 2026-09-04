@@ -59,30 +59,58 @@
     .login-button:hover { background: var(--orange); }
     .modal-backdrop {
       display: none; position: fixed; z-index: 10; inset: 0; place-items: center; padding: 20px;
-      background: rgba(33, 49, 43, .55);
+      background: rgba(5, 12, 10, .72); backdrop-filter: blur(10px);
     }
     .modal-backdrop.is-open { display: grid; }
     .login-modal {
-      position: relative; width: min(100%, 430px); padding: 34px; border-radius: 22px;
-      background: var(--paper); box-shadow: var(--shadow);
+      position: relative; width: min(100%, 470px); overflow: hidden; padding: 38px;
+      border: 1px solid rgba(238, 117, 72, .24); border-radius: 28px;
+      background: linear-gradient(145deg, #263a32 0%, var(--paper) 48%, #17211d 100%);
+      box-shadow: 0 28px 80px rgba(0, 0, 0, .42); animation: modal-pop .35s cubic-bezier(.22, 1, .36, 1) both;
     }
-    .login-modal h2 { margin: 7px 0 8px; font-size: 2rem; }
-    .login-modal-intro { margin: 0 0 22px; color: var(--muted); font-size: .9rem; line-height: 1.5; }
+    .login-modal::before {
+      content: ""; position: absolute; top: -100px; right: -75px; width: 220px; height: 220px;
+      border-radius: 50%; background: rgba(238, 117, 72, .15); filter: blur(2px); pointer-events: none;
+    }
+    .login-modal-header { position: relative; display: flex; align-items: center; gap: 13px; margin-bottom: 24px; }
+    .login-modal-mark {
+      display: grid; place-items: center; width: 48px; height: 48px; flex: 0 0 48px;
+      border: 1px solid rgba(255, 255, 255, .18); border-radius: 15px; color: #fff;
+      background: linear-gradient(135deg, var(--orange), #f29a5c); font-size: 1.35rem;
+      box-shadow: 0 10px 22px rgba(238, 117, 72, .2);
+    }
+    .login-modal-kicker { margin: 0 0 3px; color: #f5b08a; font-size: .7rem; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; }
+    .login-modal h2 { margin: 0; font-size: clamp(1.75rem, 5vw, 2.15rem); letter-spacing: -.045em; }
+    .login-modal-intro { max-width: 350px; margin: 0 0 25px; color: var(--muted); font-size: .92rem; line-height: 1.55; }
     .close-modal {
-      position: absolute; top: 15px; right: 18px; border: 0; background: transparent;
-      color: var(--muted); font-size: 1.5rem; line-height: 1;
+      position: absolute; z-index: 1; top: 17px; right: 18px; display: grid; place-items: center;
+      width: 34px; height: 34px; border: 1px solid transparent; border-radius: 50%; background: transparent;
+      color: var(--muted); font-size: 1.4rem; line-height: 1;
     }
-    .close-modal:hover { color: var(--orange-dark); }
-    .login-form { display: grid; gap: 15px; }
-    .login-form label { display: grid; gap: 7px; color: var(--ink); font-size: .82rem; font-weight: 800; }
-    .login-form .show-password { display: flex; align-items: center; gap: 8px; font-weight: 400; }
-    .login-form .show-password input { width: auto; }
+    .close-modal:hover { border-color: var(--line); color: #fff; background: rgba(255, 255, 255, .08); transform: rotate(90deg); }
+    .login-form { display: grid; gap: 16px; }
+    .login-form label { display: grid; gap: 8px; color: #e8eee9; font-size: .78rem; font-weight: 800; letter-spacing: .01em; }
     .login-form input {
-      width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 12px 13px;
-      color: var(--ink); background: #15201c; font: inherit; outline: 0;
+      width: 100%; border: 1px solid #3b5047; border-radius: 12px; padding: 13px 14px;
+      color: var(--ink); background: rgba(12, 20, 17, .66); font: inherit; outline: 0;
     }
-    .login-form input:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(238, 117, 72, .14); }
-    .login-form .primary-button { margin-top: 3px; }
+    .login-form input::placeholder { color: #75847c; }
+    .login-form input:hover { border-color: #61766b; }
+    .login-form input:focus { border-color: var(--orange); background: rgba(12, 20, 17, .9); box-shadow: 0 0 0 4px rgba(238, 117, 72, .14); }
+    .login-form .show-password { display: flex; align-items: center; gap: 8px; margin-top: -4px; color: var(--muted); font-size: .78rem; font-weight: 600; }
+    .login-form .show-password input { width: 15px; height: 15px; accent-color: var(--orange); }
+    .login-form .primary-button { width: 100%; margin-top: 2px; padding: 14px 22px; }
+    .login-form .create-account {
+      width: 100%; border: 1px solid #486056; border-radius: 12px; padding: 12px 18px;
+      color: var(--ink); background: rgba(255, 255, 255, .04); font-weight: 800;
+    }
+    .login-form .create-account:hover { border-color: var(--orange); color: #fff; background: rgba(238, 117, 72, .1); transform: translateY(-2px); }
+    .login-form .forgot-password-link { justify-self: center; margin-top: -3px; color: #f5b08a; font-size: .8rem; font-weight: 800; }
+    .login-form .forgot-password-link:hover { color: #fff; text-decoration: underline; text-underline-offset: 4px; }
+    .login-status { min-height: 18px; margin: -3px 0 -4px; color: #f5b08a; font-size: .8rem; line-height: 1.4; text-align: center; }
+    .login-trust { display: flex; align-items: center; justify-content: center; gap: 7px; margin: 24px 0 0; color: #81958a; font-size: .72rem; }
+    .login-trust::before { content: "✓"; display: grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; color: #142019; background: #9fd1a8; font-size: .65rem; font-weight: 900; }
+    @keyframes modal-pop { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
     .save-password-popover {
       display: none; position: fixed; z-index: 20; right: 20px; bottom: 20px; width: min(100% - 40px, 360px);
       padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--paper); box-shadow: var(--shadow);
@@ -223,6 +251,7 @@
       .promo-box { grid-template-columns: 1fr; padding: 35px 28px; }
       .promo-art { display: none; }
       .contact-grid { grid-template-columns: 1fr; }
+      .login-modal { padding: 32px 24px 26px; border-radius: 23px; }
     }
     @media (max-width: 430px) {
       .container { width: min(100% - 28px, 1120px); }
@@ -319,8 +348,10 @@
   <div class="modal-backdrop" id="login-dialog" role="dialog" aria-modal="true" aria-labelledby="login-title">
     <div class="login-modal">
       <button class="close-modal" type="button" aria-label="Close login form">×</button>
-      <div class="eyebrow">Welcome back</div>
-      <h2 id="login-title">Log in to your account</h2>
+      <div class="login-modal-header">
+        <span class="login-modal-mark" aria-hidden="true">✦</span>
+        <div><p class="login-modal-kicker">Welcome back</p><h2 id="login-title">Log in to your account</h2></div>
+      </div>
       <p class="login-modal-intro">Save your favorite dishes and make your next order even easier.</p>
       <form class="login-form" action="/api/auth/login" method="post" autocomplete="on">
         <label for="username">Username
@@ -338,6 +369,7 @@
         <button class="create-account" type="button">Create account</button>
         <a class="forgot-password-link" href="forgot-password.html">Forgot password?</a>
       </form>
+      <p class="login-trust">Your account details are encrypted and protected.</p>
     </div>
 
     <div class="modal-backdrop" id="cart-dialog" role="dialog" aria-modal="true" aria-labelledby="cart-title">

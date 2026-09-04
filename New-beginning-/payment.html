@@ -42,7 +42,7 @@
 <body>
   <header><nav class="container"><a class="brand" href="first.html">✦ food with heath</a><a class="back-link" href="cart.html">← Back to cart</a></nav></header>
   <main class="container">
-    <div class="eyebrow">Secure checkout demo</div>
+    <div class="eyebrow">Secure Razorpay checkout</div>
     <h1>Complete your order</h1>
     <div class="checkout-grid">
       <section class="panel">
@@ -55,19 +55,15 @@
         <form class="payment-form">
           <label>Full name<input name="name" type="text" autocomplete="name" required></label>
           <label>Email<input name="email" type="email" autocomplete="email" required></label>
-          <label>Card number<input name="card" inputmode="numeric" autocomplete="cc-number" placeholder="4242 4242 4242 4242" minlength="12" required></label>
-          <div class="form-row">
-            <label>Expiry date<input name="expiry" type="text" autocomplete="cc-exp" placeholder="MM/YY" required></label>
-            <label>CVV<input name="cvv" type="password" inputmode="numeric" autocomplete="cc-csc" minlength="3" maxlength="4" required></label>
-          </div>
-          <p class="payment-note">Demo only: card details are not sent or stored. A real provider should tokenize payments.</p>
-          <button class="pay-button" type="submit">Pay now</button>
+          <p class="payment-note">You will be securely redirected to Razorpay to pay by card, UPI, net banking, or wallet. Your payment details never touch this website.</p>
+          <button class="pay-button" type="submit">Continue to Razorpay</button>
           <p class="payment-status" role="status" aria-live="polite"></p>
         </form>
       </section>
     </div>
   </main>
   <script src="api-config.js"></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script>
     const items = document.querySelector(".order-items");
     const totalElement = document.querySelector(".total");
@@ -109,20 +105,43 @@
       event.preventDefault();
       const formData = new FormData(form);
       try {
-        const response = await fetch(`${window.FOOD_API_URL}/api/orders`, {
+        const response = await fetch(`${window.FOOD_API_URL}/api/payments/razorpay/order`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({
-            items: cart,
-            paymentToken: `demo_${crypto.randomUUID()}`
-          })
+          body: JSON.stringify({ items: cart })
         });
-        const result = await readApiResponse(response);
-        localStorage.removeItem("foodWithHeathCart");
-        status.textContent = `Payment successful for ${result.items.map((item) => `${item.name} × ${item.quantity}`).join(", ")}. Total: ₹${result.total}.`;
-        form.reset();
-        form.querySelector(".pay-button").disabled = true;
+        const checkout = await readApiResponse(response);
+        if (!window.Razorpay) throw new Error("Razorpay checkout could not load. Check your internet connection.");
+        const razorpay = new window.Razorpay({
+          key: checkout.keyId,
+          amount: checkout.amount,
+          currency: checkout.currency,
+          name: "Food with Heath",
+          description: "Fresh food, good mood",
+          order_id: checkout.orderId,
+          prefill: { name: form.elements.name.value, email: form.elements.email.value },
+          theme: { color: "#ee7548" },
+          handler: async (payment) => {
+            try {
+              const verifyResponse = await fetch(`${window.FOOD_API_URL}/api/payments/razorpay/verify`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ items: cart, razorpayOrderId: payment.razorpay_order_id, razorpayPaymentId: payment.razorpay_payment_id, razorpaySignature: payment.razorpay_signature })
+              });
+              const result = await readApiResponse(verifyResponse);
+              localStorage.removeItem("foodWithHeathCart");
+              status.textContent = `Payment successful for ${result.items.map((item) => `${item.name} × ${item.quantity}`).join(", ")}. Total: ₹${result.total}.`;
+              form.reset();
+              form.querySelector(".pay-button").disabled = true;
+            } catch (error) {
+              status.textContent = error.message;
+            }
+          },
+          modal: { ondismiss: () => { status.textContent = "Payment cancelled. Your cart is still saved."; } }
+        });
+        razorpay.open();
       } catch (error) {
         status.textContent = error.message;
       }

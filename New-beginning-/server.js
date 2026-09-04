@@ -10,6 +10,7 @@ const SQLiteStore = require("connect-sqlite3")(session);
 const rateLimit = require("express-rate-limit");
 const bcrypt = require("bcryptjs");
 const Database = require("better-sqlite3");
+const Razorpay = require("razorpay");
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
@@ -20,6 +21,11 @@ const frontendOrigins = (process.env.FRONTEND_URL || "")
   .map((origin) => origin.trim().replace(/\/$/, ""))
   .filter(Boolean);
 const dataDir = process.env.DATA_DIR || __dirname;
+const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
+const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
+const razorpay = razorpayKeyId && razorpayKeySecret
+  ? new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret })
+  : null;
 
 if (!sessionSecret || sessionSecret.length < 32) {
   throw new Error("SESSION_SECRET must be set and at least 32 characters long.");
@@ -101,6 +107,20 @@ app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: true });
 const paymentLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: true });
+
+function getSafeOrder(items) {
+  if (!Array.isArray(items) || !items.length) return null;
+  const safeItems = items.map((item) => ({
+    name: String(item.name || "").slice(0, 100),
+    quantity: Number(item.quantity)
+  }));
+  if (safeItems.some((item) => !catalog.has(item.name) || !Number.isInteger(item.quantity) || item.quantity < 1)) return null;
+  safeItems.forEach((item) => { item.price = catalog.get(item.name); });
+  return {
+    items: safeItems,
+    total: safeItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  };
+}
 
 function requireAuth(req, res, next) {
   if (!req.session.userId && !req.session.demoUser) return res.status(401).json({ error: "You must be logged in." });
@@ -233,6 +253,63 @@ app.get("/api/auth/me", (req, res) => {
   res.json(user);
 });
 
+app.post("/api/payments/razorpay/order", requireAuth, paymentLimiter, async (req, res) => {
+  if (req.session.demoUser) {
+    return res.status(403).json({ error: "Please create an account or log in with a password before checkout." });
+  }
+  if (!razorpay) return res.status(503).json({ error: "Razorpay is not configured on the server." });
+  const safeOrder = getSafeOrder(req.body.items);
+  if (!safeOrder) return res.status(400).json({ error: "Invalid order items." });
+  try {
+    const razorpayOrder = await razorpay.orders.create({
+      amount: safeOrder.total * 100,
+      currency: "INR",
+      receipt: `food-${crypto.randomUUID().slice(0, 24)}`
+    });
+    res.status(201).json({
+      keyId: razorpayKeyId,
+      orderId: razorpayOrder.id,
+      amount: razorpayOrder.amount,
+      currency: razorpayOrder.currency,
+      items: safeOrder.items,
+      total: safeOrder.total
+    });
+  } catch (error) {
+    console.error("Razorpay order creation failed:", error);
+    res.status(502).json({ error: "Unable to start the Razorpay checkout." });
+  }
+});
+
+app.post("/api/payments/razorpay/verify", requireAuth, paymentLimiter, (req, res) => {
+  if (req.session.demoUser) {
+    return res.status(403).json({ error: "Please create an account or log in with a password before checkout." });
+  }
+  const {
+    items,
+    razorpayOrderId,
+    razorpayPaymentId,
+    razorpaySignature
+  } = req.body;
+  const safeOrder = getSafeOrder(items);
+  if (!safeOrder || typeof razorpayOrderId !== "string" || typeof razorpayPaymentId !== "string" || typeof razorpaySignature !== "string") {
+    return res.status(400).json({ error: "Incomplete Razorpay payment details." });
+  }
+  const expectedSignature = crypto
+    .createHmac("sha256", razorpayKeySecret || "")
+    .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+    .digest("hex");
+  const expectedBuffer = Buffer.from(expectedSignature);
+  const signatureBuffer = Buffer.from(razorpaySignature);
+  if (expectedBuffer.length !== signatureBuffer.length || !crypto.timingSafeEqual(expectedBuffer, signatureBuffer)) {
+    return res.status(400).json({ error: "Razorpay payment verification failed." });
+  }
+  const orderId = crypto.randomUUID();
+  database.prepare(
+    "INSERT INTO orders (id, user_id, items_json, total, status) VALUES (?, ?, ?, ?, ?)"
+  ).run(orderId, req.session.userId, JSON.stringify(safeOrder.items), safeOrder.total, `paid-razorpay:${razorpayPaymentId}`);
+  res.status(201).json({ orderId, items: safeOrder.items, total: safeOrder.total, status: "paid" });
+});
+
 app.post("/api/orders", requireAuth, paymentLimiter, (req, res) => {
   if (req.session.demoUser) {
     return res.status(403).json({ error: "Please create an account or log in with a password before checkout." });
@@ -241,20 +318,15 @@ app.post("/api/orders", requireAuth, paymentLimiter, (req, res) => {
   if (!Array.isArray(items) || !items.length || typeof paymentToken !== "string" || !/^demo_[a-f0-9-]{36}$/.test(paymentToken)) {
     return res.status(400).json({ error: "A non-empty order and valid payment token are required." });
   }
-  const safeItems = items.map((item) => ({
-    name: String(item.name || "").slice(0, 100),
-    quantity: Number(item.quantity)
-  }));
-  if (safeItems.some((item) => !catalog.has(item.name) || !Number.isInteger(item.quantity) || item.quantity < 1)) {
+  const safeOrder = getSafeOrder(items);
+  if (!safeOrder) {
     return res.status(400).json({ error: "Invalid order items." });
   }
-  safeItems.forEach((item) => { item.price = catalog.get(item.name); });
-  const total = safeItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const orderId = crypto.randomUUID();
   database.prepare(
     "INSERT INTO orders (id, user_id, items_json, total, status) VALUES (?, ?, ?, ?, ?)"
-  ).run(orderId, req.session.userId, JSON.stringify(safeItems), total, "paid-demo");
-  res.status(201).json({ orderId, items: safeItems, total, status: "paid-demo" });
+  ).run(orderId, req.session.userId, JSON.stringify(safeOrder.items), safeOrder.total, "paid-demo");
+  res.status(201).json({ orderId, items: safeOrder.items, total: safeOrder.total, status: "paid-demo" });
 });
 
 app.listen(port, () => {
