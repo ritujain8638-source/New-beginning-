@@ -15,7 +15,10 @@ const app = express();
 const port = Number(process.env.PORT) || 3000;
 const isProduction = process.env.NODE_ENV === "production";
 const sessionSecret = process.env.SESSION_SECRET;
-const frontendUrl = process.env.FRONTEND_URL;
+const frontendOrigins = (process.env.FRONTEND_URL || "")
+  .split(",")
+  .map((origin) => origin.trim().replace(/\/$/, ""))
+  .filter(Boolean);
 const dataDir = process.env.DATA_DIR || __dirname;
 
 if (!sessionSecret || sessionSecret.length < 32) {
@@ -56,14 +59,17 @@ const catalog = new Map([
   ["Sunday pomodoro", 449],
   ["Stacked house burger", 429],
   ["Salted caramel cloud", 229],
-  ["Peach basil fizz", 169]
+  ["Peach basil fizz", 169],
+  ["Chole Bhature", 249],
+  ["Paneer Tikka", 299],
+  ["Masala Dosa", 229]
 ]);
 
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   const isVercelPreview = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin || "");
-  if (origin && (origin === frontendUrl || (!frontendUrl && isVercelPreview))) {
+  if (origin && (frontendOrigins.includes(origin) || (!frontendOrigins.length && isVercelPreview))) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Access-Control-Allow-Credentials", "true");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -132,10 +138,13 @@ app.post("/api/auth/register", authLimiter, async (req, res) => {
 
 app.post("/api/auth/login", authLimiter, async (req, res) => {
   const { username, email, password } = req.body;
+  if (typeof username !== "string" || typeof email !== "string" || typeof password !== "string") {
+    return res.status(400).json({ error: "Username, email, and password are required." });
+  }
   const user = database.prepare(
     "SELECT id, username, email, password_hash FROM users WHERE username = ? AND email = ?"
-  ).get(username?.trim(), email?.trim().toLowerCase());
-  if (!user || !(await bcrypt.compare(password || "", user.password_hash))) {
+  ).get(username.trim(), email.trim().toLowerCase());
+  if (!user || !(await bcrypt.compare(password, user.password_hash))) {
     return res.status(401).json({ error: "Invalid username, email, or password." });
   }
   req.session.regenerate((sessionError) => {
@@ -165,7 +174,7 @@ app.post("/api/auth/forgot-password", authLimiter, (req, res) => {
   if (isProduction) return res.json(genericResponse);
   res.json({
     ...genericResponse,
-    resetUrl: `${frontendUrl || `${req.protocol}://${req.get("host")}`}/forgot-password.html?token=${token}`
+    resetUrl: `${frontendOrigins[0] || `${req.protocol}://${req.get("host")}`}/forgot-password.html?token=${token}`
   });
 });
 
@@ -225,6 +234,9 @@ app.get("/api/auth/me", (req, res) => {
 });
 
 app.post("/api/orders", requireAuth, paymentLimiter, (req, res) => {
+  if (req.session.demoUser) {
+    return res.status(403).json({ error: "Please create an account or log in with a password before checkout." });
+  }
   const { items, paymentToken } = req.body;
   if (!Array.isArray(items) || !items.length || typeof paymentToken !== "string" || !/^demo_[a-f0-9-]{36}$/.test(paymentToken)) {
     return res.status(400).json({ error: "A non-empty order and valid payment token are required." });
