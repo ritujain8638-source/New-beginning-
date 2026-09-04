@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: food-with-heath-api
+    runtime: node
+    rootDir: New-beginning-
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: DATA_DIR
+        value: /opt/render/project/src/data
+      - key: FRONTEND_URL
+        sync: false
+    disk:
+      name: food-with-heath-data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1
