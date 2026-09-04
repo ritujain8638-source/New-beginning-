@@ -654,6 +654,10 @@
       userDataStore.clearUser();
       updateLoginButton();
     });
+    if (new URLSearchParams(window.location.search).get("login") === "1") {
+      loginDialog.classList.add("is-open");
+      loginDialog.querySelector("input").focus();
+    }
   </script>
 </body>
 </html>

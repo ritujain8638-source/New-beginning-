@@ -36,6 +36,10 @@
     .pay-button:hover { background: #d85e36; }
     .payment-note, .payment-status { color: var(--muted); font-size: .8rem; line-height: 1.5; }
     .payment-status { color: var(--orange); font-weight: 800; }
+    .login-required { display: none; margin: 0; padding: 12px 14px; border-radius: 10px; color: #f5b08a; background: rgba(238, 117, 72, .1); font-size: .82rem; line-height: 1.45; }
+    .login-required.is-visible { display: block; }
+    .login-required a { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+    .pay-button:disabled { cursor: not-allowed; opacity: .5; }
     @media (max-width: 760px) { .checkout-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -55,20 +59,24 @@
         <form class="payment-form">
           <label>Full name<input name="name" type="text" autocomplete="name" required></label>
           <label>Email<input name="email" type="email" autocomplete="email" required></label>
+          <p class="login-required" role="alert"></p>
           <p class="payment-note">You will be securely redirected to Razorpay to pay by card, UPI, net banking, or wallet. Your payment details never touch this website.</p>
-          <button class="pay-button" type="submit">Continue to Razorpay</button>
+          <button class="pay-button" type="submit" disabled>Checking your login…</button>
           <p class="payment-status" role="status" aria-live="polite"></p>
         </form>
       </section>
     </div>
   </main>
   <script src="api-config.js"></script>
+  <script src="user-data.js"></script>
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script>
     const items = document.querySelector(".order-items");
     const totalElement = document.querySelector(".total");
     const form = document.querySelector(".payment-form");
     const status = document.querySelector(".payment-status");
+    const loginRequired = document.querySelector(".login-required");
+    const payButton = form.querySelector(".pay-button");
     const cart = JSON.parse(localStorage.getItem("foodWithHeathCart") || "[]");
     let total = 0;
 
@@ -98,7 +106,25 @@
 
     if (!cart.length) {
       items.textContent = "Your cart is empty.";
-      form.querySelector(".pay-button").disabled = true;
+      payButton.disabled = true;
+      payButton.textContent = "Your cart is empty";
+    }
+
+    async function restoreCheckoutSession() {
+      if (!cart.length) return;
+      try {
+        const user = await userDataStore.restoreSession();
+        if (!user) throw new Error("Please log in before checkout.");
+        form.elements.name.value = user.username;
+        form.elements.email.value = user.email;
+        payButton.disabled = false;
+        payButton.textContent = "Continue to Razorpay";
+      } catch {
+        loginRequired.innerHTML = 'Please <a href="first.html?login=1">log in with your account</a> before continuing to payment.';
+        loginRequired.classList.add("is-visible");
+        payButton.textContent = "Log in to continue";
+        payButton.onclick = () => { window.location.href = "first.html?login=1"; };
+      }
     }
 
     form.addEventListener("submit", async (event) => {
@@ -146,6 +172,7 @@
         status.textContent = error.message;
       }
     });
+    restoreCheckoutSession();
   </script>
 </body>
 </html>
