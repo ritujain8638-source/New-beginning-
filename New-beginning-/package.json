@@ -4,6 +4,9 @@
   "private": true,
   "description": "Food with Heath website and secure checkout backend",
   "main": "server.js",
+  "engines": {
+    "node": ">=20 <26"
+  },
   "scripts": {
     "start": "node server.js"
   },

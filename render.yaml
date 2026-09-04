@@ -3,8 +3,9 @@ services:
     name: food-with-heath-api
     runtime: node
     rootDir: New-beginning-
-    buildCommand: npm install
+    buildCommand: npm ci
     startCommand: npm start
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
