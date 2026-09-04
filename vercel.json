@@ -1,6 +1,5 @@
 {
   "cleanUrls": true,
-  "outputDirectory": "New-beginning-",
   "headers": [
     {
       "source": "/(.*)",

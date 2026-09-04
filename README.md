@@ -6,7 +6,7 @@ Trying to do something because I don't know how to use GitHub
 This repository includes a root `vercel.json`, so the frontend can be deployed directly from the repository root:
 
 1. Import this GitHub repository at [vercel.com/new](https://vercel.com/new).
-2. Leave **Root Directory** set to `./`.
+2. Leave **Root Directory** set to `./`. The root homepage redirects to `New-beginning-/first.html`.
 3. Keep the default build settings and deploy.
 4. Open the generated HTTPS URL.
 
