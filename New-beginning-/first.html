@@ -491,12 +491,17 @@
       loginButton.focus();
     }
 
-    function returnToCheckoutIfNeeded() {
-      if (new URLSearchParams(window.location.search).get("login") === "1") {
-        window.location.href = "payment.html";
+    async function returnToCheckoutIfNeeded() {
+      if (new URLSearchParams(window.location.search).get("login") !== "1") return false;
+      try {
+        await userDataStore.restoreSession();
+      } catch {
+        loginDialog.classList.add("is-open");
+        loginStatus.textContent = "Your login could not be saved. Please try again before checkout.";
         return true;
       }
-      return false;
+      window.location.href = "payment.html";
+      return true;
     }
 
     function offerSavePassword(user, password) {
@@ -584,7 +589,7 @@
         loginForm.reset();
         updateLoginButton();
         closeLoginDialog();
-        returnToCheckoutIfNeeded();
+        await returnToCheckoutIfNeeded();
       } catch (error) {
         loginStatus.textContent = error.message;
       }
@@ -613,7 +618,7 @@
         loginForm.reset();
         updateLoginButton();
         closeLoginDialog();
-        returnToCheckoutIfNeeded();
+        await returnToCheckoutIfNeeded();
       } catch (error) {
         loginStatus.textContent = error.message;
       }
