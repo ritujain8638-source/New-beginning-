@@ -29,10 +29,10 @@
     },
 
     saveUser: async function (user) {
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch(`${window.FOOD_API_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
+        credentials: "include",
         body: JSON.stringify(user)
       });
       const safeUser = await readResponse(response);
@@ -40,10 +40,10 @@
     },
 
     saveDemoUser: async function (user) {
-      const response = await fetch("/api/auth/demo-login", {
+      const response = await fetch(`${window.FOOD_API_URL}/api/auth/demo-login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
+        credentials: "include",
         body: JSON.stringify(user)
       });
       if (response.status === 404) return this.setUser(user);
@@ -58,7 +58,7 @@
     },
 
     restoreSession: async function () {
-      const response = await fetch("/api/auth/me", { credentials: "same-origin" });
+      const response = await fetch(`${window.FOOD_API_URL}/api/auth/me`, { credentials: "include" });
       if (response.status === 404) return this.getUser();
       if (!response.ok) {
         this.clearUser();

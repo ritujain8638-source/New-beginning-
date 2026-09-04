@@ -354,6 +354,7 @@
   </aside>
 
   <footer><div class="container footer-inner"><span>© 2024 Food with Heath</span><span>Made with care, served with joy.</span></div></footer>
+  <script src="api-config.js"></script>
   <script src="user-data.js"></script>
   <script>
     const loginDialog = document.querySelector("#login-dialog");
@@ -486,7 +487,7 @@
     loginButton.addEventListener("click", async () => {
       if (userDataStore.getUser()) {
         try {
-          const response = await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
+          const response = await fetch(`${window.FOOD_API_URL}/api/auth/logout`, { method: "POST", credentials: "include" });
           await readApiResponse(response, "Unable to log out.");
           userDataStore.clearUser();
           loginStatus.textContent = "You have been logged out.";
@@ -521,10 +522,10 @@
         return;
       }
       try {
-        const response = await fetch("/api/auth/register", {
+        const response = await fetch(`${window.FOOD_API_URL}/api/auth/register`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          credentials: "same-origin",
+          credentials: "include",
           body: JSON.stringify({ username, email, password })
         });
         const user = await readApiResponse(response, "Unable to create account.");

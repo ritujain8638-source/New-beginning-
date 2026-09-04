@@ -1,6 +1,7 @@
 require("dotenv").config();
 
 const path = require("path");
+const fs = require("fs");
 const crypto = require("crypto");
 const express = require("express");
 const helmet = require("helmet");
@@ -14,12 +15,15 @@ const app = express();
 const port = Number(process.env.PORT) || 3000;
 const isProduction = process.env.NODE_ENV === "production";
 const sessionSecret = process.env.SESSION_SECRET;
+const frontendUrl = process.env.FRONTEND_URL;
+const dataDir = process.env.DATA_DIR || __dirname;
 
 if (!sessionSecret || sessionSecret.length < 32) {
   throw new Error("SESSION_SECRET must be set and at least 32 characters long.");
 }
 
-const database = new Database(path.join(__dirname, "food-with-heath.sqlite"));
+fs.mkdirSync(dataDir, { recursive: true });
+const database = new Database(path.join(dataDir, "food-with-heath.sqlite"));
 database.pragma("journal_mode = WAL");
 database.exec(`
   CREATE TABLE IF NOT EXISTS users (
@@ -56,17 +60,29 @@ const catalog = new Map([
 ]);
 
 app.use(helmet({ contentSecurityPolicy: false }));
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  const isVercelPreview = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin || "");
+  if (origin && (origin === frontendUrl || (!frontendUrl && isVercelPreview))) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  }
+  if (req.method === "OPTIONS") return res.sendStatus(204);
+  next();
+});
 app.use(express.json({ limit: "20kb" }));
 app.use(express.urlencoded({ extended: false }));
 app.use(session({
-  store: new SQLiteStore({ db: "sessions.sqlite", dir: __dirname }),
+  store: new SQLiteStore({ db: "sessions.sqlite", dir: dataDir }),
   name: "food_with_heath_session",
   secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: isProduction ? "none" : "lax",
     secure: isProduction,
     maxAge: 1000 * 60 * 60 * 24 * 7
   }
@@ -75,6 +91,7 @@ app.use(express.static(__dirname));
 app.get("/", (_req, res) => {
   res.sendFile(path.join(__dirname, "first.html"));
 });
+app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: true });
 const paymentLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: true });
@@ -148,7 +165,7 @@ app.post("/api/auth/forgot-password", authLimiter, (req, res) => {
   if (isProduction) return res.json(genericResponse);
   res.json({
     ...genericResponse,
-    resetUrl: `${req.protocol}://${req.get("host")}/forgot-password.html?token=${token}`
+    resetUrl: `${frontendUrl || `${req.protocol}://${req.get("host")}`}/forgot-password.html?token=${token}`
   });
 });
 
