@@ -51,7 +51,10 @@
       "Sunday pomodoro": "https://images.unsplash.com/photo-1563379926898-05f4575a45d8?auto=format&fit=crop&w=900&q=85",
       "Stacked house burger": "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=900&q=85",
       "Salted caramel cloud": "https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=900&q=85",
-      "Peach basil fizz": "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=900&q=85"
+      "Peach basil fizz": "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=900&q=85",
+      "Chole Bhature": "https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=900&q=85",
+      "Paneer Tikka": "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=900&q=85",
+      "Masala Dosa": "https://images.unsplash.com/photo-1630383249896-424e482df921?auto=format&fit=crop&w=900&q=85"
     };
     const list = document.querySelector(".cart-list");
     const totalElement = document.querySelector(".total");
@@ -63,7 +66,7 @@
       list.replaceChildren();
       let total = 0;
       cart.forEach((item) => {
-        item.image = item.image || images[item.name];
+        item.image = item.image || images[item.name] || "";
         total += item.price * item.quantity;
         const card = document.createElement("article");
         card.className = "cart-item";
