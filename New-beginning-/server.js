@@ -15,6 +15,7 @@ const Razorpay = require("razorpay");
 const app = express();
 const port = Number(process.env.PORT) || 3000;
 const isProduction = process.env.NODE_ENV === "production";
+if (isProduction) app.set("trust proxy", 1);
 const sessionSecret = process.env.SESSION_SECRET;
 const frontendOrigins = (process.env.FRONTEND_URL || "")
   .split(",")
