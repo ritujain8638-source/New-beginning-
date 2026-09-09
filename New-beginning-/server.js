@@ -133,6 +133,17 @@ function validateCredentials(username, email, password) {
     typeof password === "string" && password.length >= 8;
 }
 
+function startUserSession(req, res, user, statusCode = 200) {
+  req.session.regenerate((sessionError) => {
+    if (sessionError) return res.status(500).json({ error: "Unable to start a secure session." });
+    req.session.userId = user.id;
+    req.session.save((saveError) => {
+      if (saveError) return res.status(500).json({ error: "Unable to save the secure session." });
+      res.status(statusCode).json({ username: user.username, email: user.email });
+    });
+  });
+}
+
 app.post("/api/auth/register", authLimiter, async (req, res) => {
   const { username, email, password } = req.body;
   if (!validateCredentials(username, email, password)) {
@@ -143,11 +154,11 @@ app.post("/api/auth/register", authLimiter, async (req, res) => {
     const result = database.prepare(
       "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)"
     ).run(username.trim(), email.trim().toLowerCase(), passwordHash);
-    req.session.regenerate((sessionError) => {
-      if (sessionError) return res.status(500).json({ error: "Unable to start a secure session." });
-      req.session.userId = result.lastInsertRowid;
-      res.status(201).json({ username: username.trim(), email: email.trim().toLowerCase() });
-    });
+    startUserSession(req, res, {
+      id: result.lastInsertRowid,
+      username: username.trim(),
+      email: email.trim().toLowerCase()
+    }, 201);
   } catch (error) {
     if (error.code === "SQLITE_CONSTRAINT_UNIQUE") {
       return res.status(409).json({ error: "Username or email is already registered." });
@@ -167,11 +178,7 @@ app.post("/api/auth/login", authLimiter, async (req, res) => {
   if (!user || !(await bcrypt.compare(password, user.password_hash))) {
     return res.status(401).json({ error: "Invalid username, email, or password." });
   }
-  req.session.regenerate((sessionError) => {
-    if (sessionError) return res.status(500).json({ error: "Unable to start a secure session." });
-    req.session.userId = user.id;
-    res.json({ username: user.username, email: user.email });
-  });
+  startUserSession(req, res, user);
 });
 
 app.post("/api/auth/forgot-password", authLimiter, (req, res) => {
